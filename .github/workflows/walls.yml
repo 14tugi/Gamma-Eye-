@@ -1,0 +1,30 @@
+name: wall-alerts
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+    inputs:
+      test:
+        description: "Send a test notification instead of a real check"
+        type: boolean
+        default: false
+concurrency:
+  group: wall-alerts
+  cancel-in-progress: false
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/cache@v4
+        with:
+          path: state.json
+          key: state-${{ github.run_id }}
+          restore-keys: state-
+      - run: node walls-alert.mjs ${{ inputs.test && '--test' || '--once' }}
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
